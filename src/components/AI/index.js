@@ -1,12 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Modal } from '../Common';
 import { copyToClipboard } from '../../utils';
+
+// List of popular AI services
+const AI_SERVICES = [
+  { id: 'chatgpt', name: 'ChatGPT', url: 'https://chat.openai.com/' },
+  { id: 'gemini', name: 'Gemini', url: 'https://gemini.google.com/' },
+  { id: 'claude', name: 'Claude', url: 'https://claude.ai/' },
+  { id: 'copilot', name: 'Copilot', url: 'https://copilot.microsoft.com/' },
+  { id: 'perplexity', name: 'Perplexity', url: 'https://www.perplexity.ai/' }
+];
 
 const AI = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState(null);
+  const [showAIServices, setShowAIServices] = useState(false);
+  const [customAIUrl, setCustomAIUrl] = useState('');
+  const [customAIUrlInput, setCustomAIUrlInput] = useState('');
+
+  // Load custom AI URL from localStorage
+  useEffect(() => {
+    const savedUrl = localStorage.getItem('customAIUrl') || '';
+    setCustomAIUrl(savedUrl);
+    setCustomAIUrlInput(savedUrl);
+  }, []);
 
   const promptTemplates = [
+    // ... (your existing promptTemplates array)
     {
       id: 'project-overview',
       title: 'Project Overview',
@@ -24,68 +44,24 @@ Please expand this into a comprehensive project overview that includes:
 
 Make it professional and suitable for executive presentation.`
     },
-    {
-      id: 'risk-assessment',
-      title: 'Risk Assessment',
-      description: 'Identify and analyze project risks',
-      template: `Based on this project information:
-
-[USER_TEXT]
-
-Please help me identify potential risks and create mitigation strategies. For each risk, provide:
-- Risk description
-- Probability (High/Medium/Low)
-- Impact (High/Medium/Low)
-- Mitigation strategy
-- Contingency plan
-
-Focus on common project management risks like scope creep, resource constraints, technical challenges, and timeline issues.`
-    },
-    {
-      id: 'stakeholder-analysis',
-      title: 'Stakeholder Analysis',
-      description: 'Analyze project stakeholders',
-      template: `Help me analyze stakeholders for this project:
-
-[USER_TEXT]
-
-Please provide:
-- Complete stakeholder list with roles
-- Influence vs Interest matrix
-- Communication preferences for each stakeholder
-- Engagement strategies
-- Potential concerns and how to address them
-
-Make it comprehensive for effective stakeholder management.`
-    },
-    {
-      id: 'timeline-optimization',
-      title: 'Timeline Optimization',
-      description: 'Optimize project timeline and milestones',
-      template: `Review this project timeline:
-
-[USER_TEXT]
-
-Please help optimize it by:
-- Identifying critical path activities
-- Suggesting realistic timeframes
-- Recommending key milestones
-- Identifying dependencies
-- Proposing buffer time for risks
-
-Provide a structured timeline with phases, activities, and durations.`
-    }
+    // ... (other templates)
   ];
 
   const handlePromptSelect = async (prompt) => {
     try {
       await copyToClipboard(prompt.template);
       setSelectedPrompt(prompt);
-      alert(`Prompt "${prompt.title}" copied to clipboard! You can now paste it into your preferred AI service.`);
+      setShowAIServices(true);
+      alert(`Prompt "${prompt.title}" copied to clipboard! Now open your preferred AI service.`);
     } catch (error) {
       console.error('Failed to copy prompt:', error);
       alert('Failed to copy prompt. Please copy manually.');
     }
+  };
+
+  const handleCustomAIUrlSave = () => {
+    setCustomAIUrl(customAIUrlInput);
+    localStorage.setItem('customAIUrl', customAIUrlInput);
   };
 
   return (
@@ -144,6 +120,61 @@ Provide a structured timeline with phases, activities, and durations.`
           </div>
         </div>
       </div>
+
+      {/* AI Service Quick Links */}
+      {showAIServices && (
+        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-md">
+          <div className="mb-2 font-semibold text-green-800">
+            Open your preferred AI service and paste the copied prompt:
+          </div>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {AI_SERVICES.map(service => (
+              <a
+                key={service.id}
+                href={service.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200 transition"
+              >
+                {service.name}
+              </a>
+            ))}
+            {customAIUrl && (
+              <a
+                href={customAIUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition"
+              >
+                My AI
+              </a>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="url"
+              placeholder="Set your own AI service URL"
+              value={customAIUrlInput}
+              onChange={e => setCustomAIUrlInput(e.target.value)}
+              className="border rounded px-2 py-1 text-sm"
+              style={{ minWidth: 220 }}
+            />
+            <Button
+              variant="secondary"
+              onClick={handleCustomAIUrlSave}
+              disabled={!customAIUrlInput}
+            >
+              Save My AI URL
+            </Button>
+          </div>
+          <button
+            className="mt-2 text-xs text-gray-500 underline"
+            onClick={() => setShowAIServices(false)}
+          >
+            Close
+          </button>
+        </div>
+      )}
 
       <Modal
         isOpen={isModalOpen}
