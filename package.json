@@ -10,7 +10,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build --repo=https://x-access-token:${GITHUB_TOKEN}@github.com/saint1415/project-plan-app.git"
   },
   "dependencies": {
     "react": "^18.2.0",
