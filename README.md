@@ -14,7 +14,7 @@
 - Project plan templates and customizable sections
 - Real-time or file-based collaboration
 - Version history and change tracking
-- Cloud storage integration (Google Drive, Dropbox, etc.)
+- Cloud storage integration (Google Drive, Dropbox, OneDrive, etc.)
 - Direct AI API integration for in-app suggestions
 - User accounts and authentication
 - Analytics and insights
