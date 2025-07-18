@@ -1,9 +1,314 @@
-/* Global Styles */
-/* TODO: Add comprehensive styling */
-
-.App {
-  text-align: center;
-  padding: 20px;
+/* Reset and base styles */
+body {
+  margin: 0;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  background: #f7f9fb;
+  color: #222;
+  min-height: 100vh;
 }
 
-/* Placeholder for future styles */
+.app {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.app-navigation {
+  display: flex;
+  align-items: center;
+  background: #1a2233;
+  color: #fff;
+  padding: 0.5rem 2rem;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(30,40,60,0.04);
+}
+
+.nav-brand h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.nav-items {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  background: none;
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.nav-item.active,
+.nav-item:hover {
+  background: #2d3650;
+}
+
+.nav-icon {
+  margin-right: 0.5em;
+}
+
+.nav-user {
+  font-size: 0.95rem;
+}
+
+.main-content {
+  flex: 1;
+  max-width: 900px;
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(30,40,60,0.06);
+  padding: 2rem 2.5rem;
+}
+
+.content-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.content-header .project-description {
+  color: #555;
+  margin-bottom: 1.5rem;
+}
+
+.section-form-container,
+.export-container,
+.templates-container,
+.collaboration-container,
+.analytics-container,
+.auth-container,
+.ai-container {
+  margin-bottom: 2rem;
+}
+
+.section-form input,
+.section-form textarea,
+.auth-form input,
+.invite-form input,
+.export-format-select select {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 0.7rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #f9fafb;
+  transition: border 0.2s;
+}
+
+.section-form input:focus,
+.section-form textarea:focus,
+.auth-form input:focus,
+.invite-form input:focus,
+.export-format-select select:focus {
+  border-color: #3b82f6;
+  outline: none;
+}
+
+.section-form textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.section-form button,
+.export-btn,
+.apply-template-btn,
+.invite-form button,
+.signout-btn,
+.auth-form button,
+.ai-form button {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.section-form button:hover,
+.export-btn:hover,
+.apply-template-btn:hover,
+.invite-form button:hover,
+.signout-btn:hover,
+.auth-form button:hover,
+.ai-form button:hover {
+  background: #1d4ed8;
+}
+
+.form-error,
+.export-error,
+.invite-error,
+.template-error,
+.auth-error,
+.ai-error {
+  color: #b91c1c;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.97rem;
+}
+
+.invite-success {
+  color: #166534;
+  background: #bbf7d0;
+  border: 1px solid #4ade80;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.97rem;
+}
+
+.sections-list,
+.collaborators-list,
+.analytics-breakdown ul,
+.templates-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0 0;
+}
+
+.section-item,
+.collaborator-item,
+.template-card {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.7rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-actions button {
+  background: none;
+  color: #2563eb;
+  border: none;
+  font-size: 0.97rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.section-actions button:hover {
+  background: #e0e7ff;
+}
+
+.section-description {
+  color: #555;
+  margin-top: 0.5rem;
+}
+
+.section-empty {
+  color: #888;
+  font-style: italic;
+  padding: 1rem;
+}
+
+.template-card.selected {
+  border: 2px solid #2563eb;
+  background: #e0e7ff;
+}
+
+.template-preview {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.analytics-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-item {
+  min-width: 120px;
+  font-size: 1.1rem;
+}
+
+.stat-label {
+  color: #555;
+  margin-right: 0.5em;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.analytics-breakdown ul {
+  margin-top: 0.5rem;
+}
+
+.analytics-breakdown li {
+  margin-bottom: 0.3rem;
+}
+
+.auth-form,
+.invite-form,
+.ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-bottom: 1.2rem;
+}
+
+.auth-tip {
+  color: #555;
+  font-size: 0.95rem;
+  margin-top: 1rem;
+}
+
+.ai-suggestion {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 700px) {
+  .main-content {
+    padding: 1rem 0.5rem;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .app-navigation {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+  .analytics-stats {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
