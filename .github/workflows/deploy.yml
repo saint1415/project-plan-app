@@ -23,14 +23,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Configure Git
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-
-      - name: Deploy
-        run: |
-          npm install -g gh-pages
-          npm run deploy
-        env:
-          CI: false
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
