@@ -1,4 +1,196 @@
-{ id: 'cost-controls', label: 'Cost Control Procedures', type: 'textarea', required: true },
+import React, { useState, createContext, useContext, useEffect, useCallback, useMemo } from 'react';
+import './styles.css';
+
+// ============================================================================
+// CONSTANTS & CONFIGURATION
+// ============================================================================
+
+const ProjectStatus = {
+  DRAFT: 'draft',
+  IN_PROGRESS: 'in_progress',
+  REVIEW: 'review',
+  APPROVED: 'approved',
+  ARCHIVED: 'archived'
+};
+
+const UserRoles = {
+  OWNER: 'owner',
+  ADMIN: 'admin',
+  EDITOR: 'editor',
+  VIEWER: 'viewer'
+};
+
+const ProjectMethodologies = {
+  TRADITIONAL: 'traditional',
+  AGILE: 'agile',
+  HYBRID: 'hybrid',
+  LEAN: 'lean',
+  PRINCE2: 'prince2'
+};
+
+// Enhanced PMBOK Sections with professional structure
+const ENHANCED_PMBOK_SECTIONS = {
+  'project-charter': {
+    id: 'project-charter',
+    title: 'Project Charter',
+    description: 'High-level project purpose, objectives, and authority',
+    category: 'Initiating',
+    processGroup: 'initiating',
+    knowledgeArea: 'integration',
+    required: true,
+    estimatedTime: 8,
+    complexity: 'medium',
+    fields: [
+      { id: 'purpose', label: 'Project Purpose', type: 'textarea', required: true },
+      { id: 'objectives', label: 'Project Objectives', type: 'textarea', required: true },
+      { id: 'success-criteria', label: 'Success Criteria', type: 'textarea', required: true },
+      { id: 'assumptions', label: 'Key Assumptions', type: 'textarea', required: false },
+      { id: 'constraints', label: 'Project Constraints', type: 'textarea', required: false }
+    ],
+    aiPrompt: `Create a comprehensive Project Charter that establishes project authority:
+
+**Project Context:** [USER_TEXT]
+
+Please develop:
+1. **Business Case & Justification** - Clear business need and ROI
+2. **Project Objectives (SMART)** - Specific, measurable outcomes  
+3. **High-Level Scope** - Major deliverables and milestones
+4. **Stakeholder Overview** - Key stakeholders and decision structure
+5. **Assumptions & Constraints** - Resource, timeline, and technology limitations
+6. **Risk Overview** - Major risk categories and mitigation strategies
+
+Format as an executive-ready document suitable for sponsor approval.`
+  },
+  'stakeholder-management': {
+    id: 'stakeholder-management',
+    title: 'Stakeholder Management Plan',
+    description: 'Stakeholder analysis and engagement strategies',
+    category: 'Planning',
+    processGroup: 'planning',
+    knowledgeArea: 'stakeholder',
+    required: true,
+    estimatedTime: 12,
+    complexity: 'high',
+    fields: [
+      { id: 'stakeholder-register', label: 'Stakeholder Register', type: 'textarea', required: true },
+      { id: 'power-interest-analysis', label: 'Power/Interest Analysis', type: 'textarea', required: true },
+      { id: 'engagement-strategies', label: 'Engagement Strategies', type: 'textarea', required: true }
+    ],
+    aiPrompt: `Develop a comprehensive Stakeholder Management Plan:
+
+**Current Stakeholder Info:** [USER_TEXT]
+
+Create detailed documentation including:
+1. **Stakeholder Register** - Complete identification with roles and influence
+2. **Power/Interest Analysis** - Classification and stakeholder attitudes  
+3. **Engagement Strategies** - Specific approaches for each stakeholder group
+4. **Communication Planning** - Information needs and reporting requirements
+5. **Monitoring & Control** - Satisfaction metrics and engagement tracking
+
+Focus on building and maintaining stakeholder support throughout the project.`
+  },
+  'scope-statement': {
+    id: 'scope-statement',
+    title: 'Project Scope Statement',
+    description: 'Detailed project scope, deliverables, and boundaries',
+    category: 'Planning',
+    processGroup: 'planning',
+    knowledgeArea: 'scope',
+    required: true,
+    estimatedTime: 10,
+    complexity: 'high',
+    fields: [
+      { id: 'scope-description', label: 'Scope Description', type: 'textarea', required: true },
+      { id: 'deliverables', label: 'Major Deliverables', type: 'textarea', required: true },
+      { id: 'acceptance-criteria', label: 'Acceptance Criteria', type: 'textarea', required: true },
+      { id: 'exclusions', label: 'Project Exclusions', type: 'textarea', required: true }
+    ],
+    aiPrompt: `Create a detailed Project Scope Statement with clear boundaries:
+
+**Project Information:** [USER_TEXT]
+
+Develop comprehensive scope documentation:
+1. **Product Scope Description** - Features, performance, and quality standards
+2. **Project Scope Description** - Work required to deliver the product
+3. **Major Deliverables** - Tangible work products and milestones
+4. **Acceptance Criteria** - Specific criteria for deliverable acceptance
+5. **Project Exclusions** - Work explicitly not included
+6. **Constraints & Assumptions** - Limitations and environmental factors
+
+Ensure clarity to prevent scope creep and misunderstandings.`
+  },
+  'wbs': {
+    id: 'wbs',
+    title: 'Work Breakdown Structure (WBS)',
+    description: 'Hierarchical decomposition of project work',
+    category: 'Planning',
+    processGroup: 'planning',
+    knowledgeArea: 'scope',
+    required: false,
+    estimatedTime: 16,
+    complexity: 'high',
+    fields: [
+      { id: 'wbs-structure', label: 'WBS Hierarchy', type: 'textarea', required: true },
+      { id: 'work-packages', label: 'Work Package Descriptions', type: 'textarea', required: true },
+      { id: 'wbs-dictionary', label: 'WBS Dictionary', type: 'textarea', required: true }
+    ],
+    aiPrompt: `Create a comprehensive Work Breakdown Structure (WBS):
+
+**Project Scope:** [USER_TEXT]
+
+Develop complete WBS including:
+1. **WBS Hierarchy** - Level 1: Major phases, Level 2: Sub-deliverables, Level 3: Work packages
+2. **Work Package Details** - Clear, actionable work descriptions (8-80 hour rule)
+3. **WBS Dictionary** - Detailed descriptions with scope and acceptance criteria
+4. **Deliverables Structure** - Tangible outputs at each level
+5. **Estimation Framework** - Effort estimates and resource requirements
+
+Follow the 100% rule - ensure all project work is captured.`
+  },
+  'schedule': {
+    id: 'schedule',
+    title: 'Project Schedule Management',
+    description: 'Timeline, dependencies, and resource allocation',
+    category: 'Planning',
+    processGroup: 'planning',
+    knowledgeArea: 'schedule',
+    required: false,
+    estimatedTime: 20,
+    complexity: 'very-high',
+    fields: [
+      { id: 'activity-list', label: 'Activity List', type: 'textarea', required: true },
+      { id: 'dependencies', label: 'Activity Dependencies', type: 'textarea', required: true },
+      { id: 'milestones', label: 'Project Milestones', type: 'textarea', required: true },
+      { id: 'critical-path', label: 'Critical Path Analysis', type: 'textarea', required: true }
+    ],
+    aiPrompt: `Develop comprehensive Project Schedule Management:
+
+**Work Breakdown & Resources:** [USER_TEXT]
+
+Create detailed schedule documentation:
+1. **Activity Definition** - Complete activity list with resource needs
+2. **Sequencing & Dependencies** - Logical relationships and constraints  
+3. **Duration Estimation** - Three-point estimates with contingency
+4. **Schedule Development** - Critical path and optimization
+5. **Milestone Planning** - Key deliverables and decision points
+6. **Baseline & Control** - Approved schedule and performance metrics
+
+Focus on realistic, achievable timelines.`
+  },
+  'budget': {
+    id: 'budget',
+    title: 'Cost Management Plan',
+    description: 'Budget planning and financial controls',
+    category: 'Planning',
+    processGroup: 'planning',
+    knowledgeArea: 'cost',
+    required: false,
+    estimatedTime: 14,
+    complexity: 'high',
+    fields: [
+      { id: 'cost-estimates', label: 'Detailed Cost Estimates', type: 'textarea', required: true },
+      { id: 'budget-breakdown', label: 'Budget Breakdown Structure', type: 'textarea', required: true },
+      { id: 'cost-controls', label: 'Cost Control Procedures', type: 'textarea', required: true },
       { id: 'funding-requirements', label: 'Funding Requirements', type: 'textarea', required: true }
     ],
     aiPrompt: `Create comprehensive Cost Management Plan:
@@ -294,7 +486,7 @@ const ProjectPlanProvider = ({ children }) => {
 
     const sectionContent = projectPlan.sections[sectionId] || {};
     const contextText = Object.values(sectionContent).join('\n\n') || '[No content yet]';
-    
+
     const enhancedPrompt = section.aiPrompt.replace('[USER_TEXT]', contextText);
 
     try {
@@ -357,7 +549,7 @@ const EnhancedNavigation = () => {
               {projectPlan.title || 'Untitled Project'}
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <div className="text-sm">
               <span className="text-gray-400">Progress:</span>
@@ -473,7 +665,7 @@ const ProjectDashboard = () => {
           {['initiating', 'planning', 'executing', 'monitoring', 'closing'].map(group => {
             const stats = getProcessGroupStats(group);
             const percentage = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
-            
+
             return (
               <div key={group} className="text-center">
                 <div className="relative inline-flex items-center justify-center w-20 h-20 mb-2">
@@ -499,6 +691,246 @@ const ProjectDashboard = () => {
   );
 };
 
+// Project Setup Component
+const ProjectSetup = () => {
+  const { projectPlan, updateProjectMetadata, setActiveView } = useProjectPlan();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    updateProjectMetadata({
+      title: formData.get('title'),
+      description: formData.get('description'),
+      methodology: formData.get('methodology'),
+      metadata: { phase: 'creation' }
+    });
+    setActiveView('sections');
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <h2 className="text-2xl font-bold mb-6">Project Setup</h2>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium mb-2">Project Title *</label>
+          <input
+            name="title"
+            type="text"
+            required
+            defaultValue={projectPlan.title}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter project title"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Description</label>
+          <textarea
+            name="description"
+            rows={4}
+            defaultValue={projectPlan.description}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            placeholder="Describe your project"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Methodology</label>
+          <select
+            name="methodology"
+            defaultValue={projectPlan.methodology}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={ProjectMethodologies.TRADITIONAL}>Traditional/Waterfall</option>
+            <option value={ProjectMethodologies.AGILE}>Agile</option>
+            <option value={ProjectMethodologies.HYBRID}>Hybrid</option>
+            <option value={ProjectMethodologies.LEAN}>Lean</option>
+            <option value={ProjectMethodologies.PRINCE2}>PRINCE2</option>
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Continue to Section Selection
+        </button>
+      </form>
+    </div>
+  );
+};
+
+// Section Manager Component  
+const SectionManager = () => {
+  const { projectPlan, toggleSection, setActiveView, ENHANCED_PMBOK_SECTIONS } = useProjectPlan();
+
+  const totalEstimatedHours = projectPlan.enabledSections.reduce((total, sectionId) => {
+    const section = ENHANCED_PMBOK_SECTIONS[sectionId];
+    return total + (section?.estimatedTime || 0);
+  }, 0);
+
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Select Project Sections</h2>
+        <p className="text-gray-600">Choose PMBOK sections for your {projectPlan.methodology} project.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        {Object.values(ENHANCED_PMBOK_SECTIONS).map(section => {
+          const isEnabled = projectPlan.enabledSections.includes(section.id);
+
+          return (
+            <div
+              key={section.id}
+              className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                isEnabled ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+              } ${section.required ? 'opacity-75' : ''}`}
+              onClick={() => !section.required && toggleSection(section.id)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">{section.title}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{section.description}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                      {section.processGroup}
+                    </span>
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+                      ~{section.estimatedTime}h
+                    </span>
+                    {section.required && (
+                      <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">Required</span>
+                    )}
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isEnabled}
+                  disabled={section.required}
+                  className="w-4 h-4 text-blue-600 rounded"
+                  readOnly
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => setActiveView('setup')}
+          className="px-4 py-2 text-gray-600 hover:text-gray-800"
+        >
+          ← Back
+        </button>
+        <div className="text-sm text-gray-600">
+          {projectPlan.enabledSections.length} sections • {totalEstimatedHours}h estimated
+        </div>
+        <button
+          onClick={() => setActiveView('editor')}
+          className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700"
+        >
+          Continue →
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Content Editor Component
+const ContentEditor = () => {
+  const { projectPlan, updateSection, ENHANCED_PMBOK_SECTIONS } = useProjectPlan();
+  const [activeSection, setActiveSection] = useState(null);
+
+  useEffect(() => {
+    if (projectPlan.enabledSections.length > 0 && !activeSection) {
+      setActiveSection(projectPlan.enabledSections[0]);
+    }
+  }, [projectPlan.enabledSections, activeSection]);
+
+  if (!activeSection) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 text-center">
+        <h2 className="text-xl font-semibold text-gray-600">No sections selected</h2>
+      </div>
+    );
+  }
+
+  const currentSection = ENHANCED_PMBOK_SECTIONS[activeSection];
+  const sectionContent = projectPlan.sections[activeSection] || {};
+
+  const handleContentChange = (field, value) => {
+    updateSection(activeSection, { ...sectionContent, [field]: value });
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Section Navigation */}
+        <div className="lg:col-span-1">
+          <h3 className="font-semibold text-gray-800 mb-3">Sections</h3>
+          <nav className="space-y-1">
+            {projectPlan.enabledSections.map(sectionId => {
+              const section = ENHANCED_PMBOK_SECTIONS[sectionId];
+              const hasContent = projectPlan.sections[sectionId] && 
+                Object.values(projectPlan.sections[sectionId]).some(val => val && val.trim());
+
+              return (
+                <button
+                  key={sectionId}
+                  onClick={() => setActiveSection(sectionId)}
+                  className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                    activeSection === sectionId
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{section.title}</span>
+                    {hasContent && <span className="w-2 h-2 bg-green-500 rounded-full"></span>}
+                  </div>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Content Editor */}
+        <div className="lg:col-span-3">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-900">{currentSection.title}</h2>
+              <p className="text-gray-600 mt-1">{currentSection.description}</p>
+            </div>
+
+            <div className="space-y-4">
+              {currentSection.fields.map(field => {
+                const fieldValue = sectionContent[field.id] || '';
+
+                return (
+                  <div key={field.id}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {field.label}
+                    </label>
+                    <textarea
+                      value={fieldValue}
+                      onChange={(e) => handleContentChange(field.id, e.target.value)}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      placeholder={`Enter ${field.label.toLowerCase()}...`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // AI Assistant Component
 const AIAssistant = () => {
   const { projectPlan, generateAIPrompt, ENHANCED_PMBOK_SECTIONS } = useProjectPlan();
@@ -518,10 +950,10 @@ const AIAssistant = () => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-6">AI Assistant</h2>
-      
+
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
         <h3 className="text-lg font-semibold mb-4">Generate AI Prompts</h3>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2">Select Section</label>
@@ -621,11 +1053,11 @@ const ExportComponent = () => {
         'Completion': Object.values(content).some(val => val && val.trim()) ? 'Complete' : 'Incomplete'
       };
     });
-    
+
     const csvHeaders = Object.keys(csvData[0] || {});
     const csvRows = csvData.map(row => csvHeaders.map(header => `"${row[header] || ''}"`).join(','));
     const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -640,7 +1072,7 @@ const ExportComponent = () => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-6">Export Project Plan</h2>
-      
+
       {/* Progress Summary */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
         <h3 className="text-lg font-semibold mb-4">Export Summary</h3>
@@ -701,7 +1133,10 @@ const ExportComponent = () => {
   );
 };
 
-// Main App Component
+// ============================================================================
+// MAIN APP COMPONENT
+// ============================================================================
+
 function App() {
   return (
     <ProjectPlanProvider>
@@ -744,432 +1179,3 @@ const MainContent = () => {
 };
 
 export default App;
-
-// Project Setup Component
-const ProjectSetup = () => {
-  const { projectPlan, updateProjectMetadata, setActiveView } = useProjectPlan();
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    updateProjectMetadata({
-      title: formData.get('title'),
-      description: formData.get('description'),
-      methodology: formData.get('methodology'),
-      metadata: { phase: 'creation' }
-    });
-    setActiveView('sections');
-  };
-
-  return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-6">Project Setup</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium mb-2">Project Title *</label>
-          <input
-            name="title"
-            type="text"
-            required
-            defaultValue={projectPlan.title}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter project title"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Description</label>
-          <textarea
-            name="description"
-            rows={4}
-            defaultValue={projectPlan.description}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="Describe your project"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Methodology</label>
-          <select
-            name="methodology"
-            defaultValue={projectPlan.methodology}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-          >
-            <option value={ProjectMethodologies.TRADITIONAL}>Traditional/Waterfall</option>
-            <option value={ProjectMethodologies.AGILE}>Agile</option>
-            <option value={ProjectMethodologies.HYBRID}>Hybrid</option>
-            <option value={ProjectMethodologies.LEAN}>Lean</option>
-            <option value={ProjectMethodologies.PRINCE2}>PRINCE2</option>
-          </select>
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Continue to Section Selection
-        </button>
-      </form>
-    </div>
-  );
-};
-
-// Section Manager Component  
-const SectionManager = () => {
-  const { projectPlan, toggleSection, setActiveView, ENHANCED_PMBOK_SECTIONS } = useProjectPlan();
-
-  const totalEstimatedHours = projectPlan.enabledSections.reduce((total, sectionId) => {
-    const section = ENHANCED_PMBOK_SECTIONS[sectionId];
-    return total + (section?.estimatedTime || 0);
-  }, 0);
-
-  return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Select Project Sections</h2>
-        <p className="text-gray-600">Choose PMBOK sections for your {projectPlan.methodology} project.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        {Object.values(ENHANCED_PMBOK_SECTIONS).map(section => {
-          const isEnabled = projectPlan.enabledSections.includes(section.id);
-          
-          return (
-            <div
-              key={section.id}
-              className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                isEnabled ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-              } ${section.required ? 'opacity-75' : ''}`}
-              onClick={() => !section.required && toggleSection(section.id)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{section.title}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{section.description}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                      {section.processGroup}
-                    </span>
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
-                      ~{section.estimatedTime}h
-                    </span>
-                    {section.required && (
-                      <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">Required</span>
-                    )}
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={isEnabled}
-                  disabled={section.required}
-                  className="w-4 h-4 text-blue-600 rounded"
-                  readOnly
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex justify-between items-center">
-        <button
-          onClick={() => setActiveView('setup')}
-          className="px-4 py-2 text-gray-600 hover:text-gray-800"
-        >
-          ← Back
-        </button>
-        <div className="text-sm text-gray-600">
-          {projectPlan.enabledSections.length} sections • {totalEstimatedHours}h estimated
-        </div>
-        <button
-          onClick={() => setActiveView('editor')}
-          className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700"
-        >
-          Continue →
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// Content Editor Component
-const ContentEditor = () => {
-  const { projectPlan, updateSection, ENHANCED_PMBOK_SECTIONS } = useProjectPlan();
-  const [activeSection, setActiveSection] = useState(null);
-
-  useEffect(() => {
-    if (projectPlan.enabledSections.length > 0 && !activeSection) {
-      setActiveSection(projectPlan.enabledSections[0]);
-    }
-  }, [projectPlan.enabledSections, activeSection]);
-
-  if (!activeSection) {
-    return (
-      <div className="max-w-4xl mx-auto p-6 text-center">
-        <h2 className="text-xl font-semibold text-gray-600">No sections selected</h2>
-      </div>
-    );
-  }
-
-  const currentSection = ENHANCED_PMBOK_SECTIONS[activeSection];
-  const sectionContent = projectPlan.sections[activeSection] || {};
-
-  const handleContentChange = (field, value) => {
-    updateSection(activeSection, { ...sectionContent, [field]: value });
-  };
-
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Section Navigation */}
-        <div className="lg:col-span-1">
-          <h3 className="font-semibold text-gray-800 mb-3">Sections</h3>
-          <nav className="space-y-1">
-            {projectPlan.enabledSections.map(sectionId => {
-              const section = ENHANCED_PMBOK_SECTIONS[sectionId];
-              const hasContent = projectPlan.sections[sectionId] && 
-                Object.values(projectPlan.sections[sectionId]).some(val => val && val.trim());
-              
-              return (
-                <button
-                  key={sectionId}
-                  onClick={() => setActiveSection(sectionId)}
-                  className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                    activeSection === sectionId
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span>{section.title}</span>
-                    {hasContent && <span className="w-2 h-2 bg-green-500 rounded-full"></span>}
-                  </div>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Content Editor */}
-        <div className="lg:col-span-3">
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900">{currentSection.title}</h2>
-              <p className="text-gray-600 mt-1">{currentSection.description}</p>
-            </div>
-
-            <div className="space-y-4">
-              {currentSection.fields.map(field => {
-                const fieldValue = sectionContent[field.id] || '';
-                
-                return (
-                  <div key={field.id}>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {field.label}
-                    </label>
-                    <textarea
-                      value={fieldValue}
-                      onChange={(e) => handleContentChange(field.id, e.target.value)}
-                      rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      placeholder={`Enter ${field.label.toLowerCase()}...`}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      import React, { useState, createContext, useContext, useEffect, useCallback, useMemo } from 'react';
-import './styles.css';
-
-// ============================================================================
-// CONSTANTS & CONFIGURATION
-// ============================================================================
-
-const ProjectStatus = {
-  DRAFT: 'draft',
-  IN_PROGRESS: 'in_progress',
-  REVIEW: 'review',
-  APPROVED: 'approved',
-  ARCHIVED: 'archived'
-};
-
-const UserRoles = {
-  OWNER: 'owner',
-  ADMIN: 'admin',
-  EDITOR: 'editor',
-  VIEWER: 'viewer'
-};
-
-const ProjectMethodologies = {
-  TRADITIONAL: 'traditional',
-  AGILE: 'agile',
-  HYBRID: 'hybrid',
-  LEAN: 'lean',
-  PRINCE2: 'prince2'
-};
-
-// Enhanced PMBOK Sections with professional structure
-const ENHANCED_PMBOK_SECTIONS = {
-  'project-charter': {
-    id: 'project-charter',
-    title: 'Project Charter',
-    description: 'High-level project purpose, objectives, and authority',
-    category: 'Initiating',
-    processGroup: 'initiating',
-    knowledgeArea: 'integration',
-    required: true,
-    estimatedTime: 8,
-    complexity: 'medium',
-    fields: [
-      { id: 'purpose', label: 'Project Purpose', type: 'textarea', required: true },
-      { id: 'objectives', label: 'Project Objectives', type: 'textarea', required: true },
-      { id: 'success-criteria', label: 'Success Criteria', type: 'textarea', required: true },
-      { id: 'assumptions', label: 'Key Assumptions', type: 'textarea', required: false },
-      { id: 'constraints', label: 'Project Constraints', type: 'textarea', required: false }
-    ],
-    aiPrompt: `Create a comprehensive Project Charter that establishes project authority:
-
-**Project Context:** [USER_TEXT]
-
-Please develop:
-1. **Business Case & Justification** - Clear business need and ROI
-2. **Project Objectives (SMART)** - Specific, measurable outcomes  
-3. **High-Level Scope** - Major deliverables and milestones
-4. **Stakeholder Overview** - Key stakeholders and decision structure
-5. **Assumptions & Constraints** - Resource, timeline, and technology limitations
-6. **Risk Overview** - Major risk categories and mitigation strategies
-
-Format as an executive-ready document suitable for sponsor approval.`
-  },
-  'stakeholder-management': {
-    id: 'stakeholder-management',
-    title: 'Stakeholder Management Plan',
-    description: 'Stakeholder analysis and engagement strategies',
-    category: 'Planning',
-    processGroup: 'planning',
-    knowledgeArea: 'stakeholder',
-    required: true,
-    estimatedTime: 12,
-    complexity: 'high',
-    fields: [
-      { id: 'stakeholder-register', label: 'Stakeholder Register', type: 'textarea', required: true },
-      { id: 'power-interest-analysis', label: 'Power/Interest Analysis', type: 'textarea', required: true },
-      { id: 'engagement-strategies', label: 'Engagement Strategies', type: 'textarea', required: true }
-    ],
-    aiPrompt: `Develop a comprehensive Stakeholder Management Plan:
-
-**Current Stakeholder Info:** [USER_TEXT]
-
-Create detailed documentation including:
-1. **Stakeholder Register** - Complete identification with roles and influence
-2. **Power/Interest Analysis** - Classification and stakeholder attitudes  
-3. **Engagement Strategies** - Specific approaches for each stakeholder group
-4. **Communication Planning** - Information needs and reporting requirements
-5. **Monitoring & Control** - Satisfaction metrics and engagement tracking
-
-Focus on building and maintaining stakeholder support throughout the project.`
-  },
-  'scope-statement': {
-    id: 'scope-statement',
-    title: 'Project Scope Statement',
-    description: 'Detailed project scope, deliverables, and boundaries',
-    category: 'Planning',
-    processGroup: 'planning',
-    knowledgeArea: 'scope',
-    required: true,
-    estimatedTime: 10,
-    complexity: 'high',
-    fields: [
-      { id: 'scope-description', label: 'Scope Description', type: 'textarea', required: true },
-      { id: 'deliverables', label: 'Major Deliverables', type: 'textarea', required: true },
-      { id: 'acceptance-criteria', label: 'Acceptance Criteria', type: 'textarea', required: true },
-      { id: 'exclusions', label: 'Project Exclusions', type: 'textarea', required: true }
-    ],
-    aiPrompt: `Create a detailed Project Scope Statement with clear boundaries:
-
-**Project Information:** [USER_TEXT]
-
-Develop comprehensive scope documentation:
-1. **Product Scope Description** - Features, performance, and quality standards
-2. **Project Scope Description** - Work required to deliver the product
-3. **Major Deliverables** - Tangible work products and milestones
-4. **Acceptance Criteria** - Specific criteria for deliverable acceptance
-5. **Project Exclusions** - Work explicitly not included
-6. **Constraints & Assumptions** - Limitations and environmental factors
-
-Ensure clarity to prevent scope creep and misunderstandings.`
-  },
-  'wbs': {
-    id: 'wbs',
-    title: 'Work Breakdown Structure (WBS)',
-    description: 'Hierarchical decomposition of project work',
-    category: 'Planning',
-    processGroup: 'planning',
-    knowledgeArea: 'scope',
-    required: false,
-    estimatedTime: 16,
-    complexity: 'high',
-    fields: [
-      { id: 'wbs-structure', label: 'WBS Hierarchy', type: 'textarea', required: true },
-      { id: 'work-packages', label: 'Work Package Descriptions', type: 'textarea', required: true },
-      { id: 'wbs-dictionary', label: 'WBS Dictionary', type: 'textarea', required: true }
-    ],
-    aiPrompt: `Create a comprehensive Work Breakdown Structure (WBS):
-
-**Project Scope:** [USER_TEXT]
-
-Develop complete WBS including:
-1. **WBS Hierarchy** - Level 1: Major phases, Level 2: Sub-deliverables, Level 3: Work packages
-2. **Work Package Details** - Clear, actionable work descriptions (8-80 hour rule)
-3. **WBS Dictionary** - Detailed descriptions with scope and acceptance criteria
-4. **Deliverables Structure** - Tangible outputs at each level
-5. **Estimation Framework** - Effort estimates and resource requirements
-
-Follow the 100% rule - ensure all project work is captured.`
-  },
-  'schedule': {
-    id: 'schedule',
-    title: 'Project Schedule Management',
-    description: 'Timeline, dependencies, and resource allocation',
-    category: 'Planning',
-    processGroup: 'planning',
-    knowledgeArea: 'schedule',
-    required: false,
-    estimatedTime: 20,
-    complexity: 'very-high',
-    fields: [
-      { id: 'activity-list', label: 'Activity List', type: 'textarea', required: true },
-      { id: 'dependencies', label: 'Activity Dependencies', type: 'textarea', required: true },
-      { id: 'milestones', label: 'Project Milestones', type: 'textarea', required: true },
-      { id: 'critical-path', label: 'Critical Path Analysis', type: 'textarea', required: true }
-    ],
-    aiPrompt: `Develop comprehensive Project Schedule Management:
-
-**Work Breakdown & Resources:** [USER_TEXT]
-
-Create detailed schedule documentation:
-1. **Activity Definition** - Complete activity list with resource needs
-2. **Sequencing & Dependencies** - Logical relationships and constraints  
-3. **Duration Estimation** - Three-point estimates with contingency
-4. **Schedule Development** - Critical path and optimization
-5. **Milestone Planning** - Key deliverables and decision points
-6. **Baseline & Control** - Approved schedule and performance metrics
-
-Focus on realistic, achievable timelines.`
-  },
-  'budget': {
-    id: 'budget',
-    title: 'Cost Management Plan',
-    description: 'Budget planning and financial controls',
-    category: 'Planning',
-    processGroup: 'planning',
-    knowledgeArea: 'cost',
-    required: false,
-    estimatedTime: 14,
-    complexity: 'high',
-    fields: [
-      { id: 'cost-estimates', label: 'Detailed Cost Estimates', type: 'textarea', required: true },
-      { id: 'budget-breakdown', label: 'Budget Breakdown Structure', type: 'textarea', required: true },
-      { id: 'cost-controls', label: 'Cost Control Procedures',
