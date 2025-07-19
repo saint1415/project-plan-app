@@ -372,6 +372,7 @@ const ProjectPlanProvider = ({ children }) => {
     id: generateId(),
     title: '',
     description: '',
+    projectManager: '', // NEW: Project Manager field
     methodology: ProjectMethodologies.TRADITIONAL,
     status: ProjectStatus.DRAFT,
     priority: 'medium',
@@ -526,6 +527,37 @@ const ProjectPlanProvider = ({ children }) => {
 // COMPONENTS
 // ============================================================================
 
+// Project Manager Input Component
+const ProjectManagerInput = () => {
+  const { projectPlan, updateProjectMetadata } = useProjectPlan();
+
+  const handleProjectManagerChange = (e) => {
+    updateProjectMetadata({ projectManager: e.target.value });
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+      <div className="flex items-center space-x-4">
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Project Manager
+          </label>
+          <input
+            type="text"
+            value={projectPlan.projectManager}
+            onChange={handleProjectManagerChange}
+            placeholder="Enter Project Manager name"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div className="text-sm text-gray-500">
+          This will appear on exported documents
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Professional Navigation
 const EnhancedNavigation = () => {
   const { activeView, setActiveView, projectPlan, projectStats } = useProjectPlan();
@@ -598,6 +630,9 @@ const ProjectDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Project Manager Input */}
+      <ProjectManagerInput />
+
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
@@ -701,6 +736,7 @@ const ProjectSetup = () => {
     updateProjectMetadata({
       title: formData.get('title'),
       description: formData.get('description'),
+      projectManager: formData.get('projectManager'),
       methodology: formData.get('methodology'),
       metadata: { phase: 'creation' }
     });
@@ -720,6 +756,18 @@ const ProjectSetup = () => {
             defaultValue={projectPlan.title}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             placeholder="Enter project title"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Project Manager *</label>
+          <input
+            name="projectManager"
+            type="text"
+            required
+            defaultValue={projectPlan.projectManager}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter Project Manager name"
           />
         </div>
 
@@ -1016,9 +1064,9 @@ const AIAssistant = () => {
   );
 };
 
-// Export Component
+// Export Component with PDF functionality
 const ExportComponent = () => {
-  const { projectPlan, projectStats } = useProjectPlan();
+  const { projectPlan, projectStats, ENHANCED_PMBOK_SECTIONS } = useProjectPlan();
 
   const exportToJSON = () => {
     const exportData = {
@@ -1069,6 +1117,135 @@ const ExportComponent = () => {
     URL.revokeObjectURL(url);
   };
 
+  const exportToPDF = () => {
+    // Load jsPDF from CDN if not already loaded
+    if (typeof window.jsPDF === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      script.onload = () => generatePDF();
+      document.head.appendChild(script);
+    } else {
+      generatePDF();
+    }
+  };
+
+  const generatePDF = () => {
+    const { jsPDF } = window.jsPDF;
+    const doc = new jsPDF();
+
+    // Set Times New Roman font (use built-in times)
+    doc.setFont('times', 'normal');
+
+    let yPosition = 30;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 20;
+    const lineHeight = 7;
+
+    // Helper function to add new page if needed
+    const checkPageBreak = (neededSpace = 20) => {
+      if (yPosition + neededSpace > pageHeight - margin) {
+        doc.addPage();
+        yPosition = margin;
+      }
+    };
+
+    // Helper function to add text with word wrapping
+    const addWrappedText = (text, x, y, maxWidth, fontSize = 12) => {
+      doc.setFontSize(fontSize);
+      const lines = doc.splitTextToSize(text, maxWidth);
+      lines.forEach((line, index) => {
+        checkPageBreak();
+        doc.text(line, x, y + (index * lineHeight));
+        yPosition = y + ((index + 1) * lineHeight);
+      });
+      return yPosition;
+    };
+
+    // Title Page
+    doc.setFontSize(24);
+    doc.setFont('times', 'bold');
+    doc.text('PROJECT MANAGEMENT PLAN', 105, 40, { align: 'center' });
+
+    yPosition = 60;
+    doc.setFontSize(18);
+    doc.text(projectPlan.title || 'Untitled Project', 105, yPosition, { align: 'center' });
+
+    yPosition += 20;
+    doc.setFontSize(14);
+    doc.setFont('times', 'normal');
+    if (projectPlan.projectManager) {
+      doc.text(`Project Manager: ${projectPlan.projectManager}`, 105, yPosition, { align: 'center' });
+      yPosition += 10;
+    }
+
+    doc.text(`Methodology: ${projectPlan.methodology.charAt(0).toUpperCase() + projectPlan.methodology.slice(1)}`, 105, yPosition, { align: 'center' });
+    yPosition += 10;
+    doc.text(`Completion: ${projectStats.completionPercentage}%`, 105, yPosition, { align: 'center' });
+
+    // Add new page for content
+    doc.addPage();
+    yPosition = margin;
+
+    // Table of Contents
+    doc.setFontSize(16);
+    doc.setFont('times', 'bold');
+    doc.text('TABLE OF CONTENTS', margin, yPosition);
+    yPosition += 15;
+
+    doc.setFontSize(12);
+    doc.setFont('times', 'normal');
+
+    projectPlan.enabledSections.forEach((sectionId, index) => {
+      const section = ENHANCED_PMBOK_SECTIONS[sectionId];
+      checkPageBreak();
+      doc.text(`${index + 1}. ${section.title}`, margin, yPosition);
+      yPosition += lineHeight;
+    });
+
+    // Content Sections
+    projectPlan.enabledSections.forEach((sectionId, index) => {
+      const section = ENHANCED_PMBOK_SECTIONS[sectionId];
+      const content = projectPlan.sections[sectionId] || {};
+
+      // Add new page for each major section
+      doc.addPage();
+      yPosition = margin;
+
+      // Section Header
+      doc.setFontSize(16);
+      doc.setFont('times', 'bold');
+      doc.text(`${index + 1}. ${section.title}`, margin, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(12);
+      doc.setFont('times', 'italic');
+      yPosition = addWrappedText(section.description, margin, yPosition, 170, 12);
+      yPosition += 10;
+
+      // Section Content
+      doc.setFont('times', 'normal');
+      section.fields.forEach(field => {
+        const fieldContent = content[field.id] || 'Not specified';
+
+        checkPageBreak(30);
+
+        // Field Label
+        doc.setFont('times', 'bold');
+        doc.text(`${field.label}:`, margin, yPosition);
+        yPosition += lineHeight;
+
+        // Field Content
+        doc.setFont('times', 'normal');
+        yPosition = addWrappedText(fieldContent, margin, yPosition, 170, 11);
+        yPosition += 10;
+      });
+    });
+
+    // Save the PDF
+    const fileName = `${projectPlan.title || 'project-plan'}-${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-6">Export Project Plan</h2>
@@ -1078,6 +1255,7 @@ const ExportComponent = () => {
         <h3 className="text-lg font-semibold mb-4">Export Summary</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div><span className="font-medium">Project:</span> {projectPlan.title || 'Untitled'}</div>
+          <div><span className="font-medium">Project Manager:</span> {projectPlan.projectManager || 'Not specified'}</div>
           <div><span className="font-medium">Methodology:</span> {projectPlan.methodology}</div>
           <div><span className="font-medium">Sections:</span> {projectStats.totalSections}</div>
           <div><span className="font-medium">Completed:</span> {projectStats.completedSections}</div>
@@ -1112,11 +1290,14 @@ const ExportComponent = () => {
             </button>
           </div>
 
-          <div className="border border-gray-200 rounded-lg p-4 opacity-50">
+          <div className="border border-gray-200 rounded-lg p-4">
             <h4 className="font-medium mb-2">PDF Export</h4>
-            <p className="text-sm text-gray-600 mb-3">Professional document format (coming soon)</p>
-            <button disabled className="bg-gray-400 text-white py-2 px-4 rounded-md cursor-not-allowed">
-              Coming Soon
+            <p className="text-sm text-gray-600 mb-3">Professional document format with Times New Roman font</p>
+            <button
+              onClick={exportToPDF}
+              className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors"
+            >
+              Export PDF
             </button>
           </div>
 
