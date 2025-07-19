@@ -4,6 +4,7 @@ import { Box, Typography, Grid, Button } from '@mui/material';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import TaskCard from './TaskCard';
 import ExportMenu from './ExportMenu';
+import ExportDocx from './ExportDocx';
 import { Task, TaskStatus } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -63,6 +64,7 @@ const TaskBoard: React.FC = () => {
   return (
     <>
       <ExportMenu tasks={tasks} />
+      <ExportDocx tasks={tasks} />
       <DragDropContext onDragEnd={onDragEnd}>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           {statusColumns.map(status => (
