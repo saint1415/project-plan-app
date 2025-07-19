@@ -27,10 +27,13 @@
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "web-vitals": "^2.1.4"
   },
   "devDependencies": {
     "@types/file-saver": "^2.0.7",
+    "@types/react": "^18.2.42",
+    "@types/react-dom": "^18.2.17",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/uuid": "^9.0.7",
     "typescript": "^4.9.5"
