@@ -860,7 +860,6 @@ const SectionManager = () => {
     readOnly
     />
     </div>
-    </div>
     );
     })}
     </div>
@@ -1064,7 +1063,7 @@ const AIAssistant = () => {
   );
 };
 
-// Export Component with PDF functionality
+// Export Component with FIXED PDF functionality
 const ExportComponent = () => {
   const { projectPlan, projectStats, ENHANCED_PMBOK_SECTIONS } = useProjectPlan();
 
@@ -1117,21 +1116,17 @@ const ExportComponent = () => {
     URL.revokeObjectURL(url);
   };
 
+  // FIXED: Correct PDF export function
   const exportToPDF = () => {
-    // Load jsPDF from CDN if not already loaded
+    // Check if jsPDF is available
     if (typeof window.jsPDF === 'undefined') {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    script.onload = () => generatePDF();
-    document.head.appendChild(script);
-    } else {
-    generatePDF();
+    alert('PDF library is loading. Please try again in a moment.');
+    return;
     }
-  };
 
-  const generatePDF = () => {
-    // FIXED: Correct way to access jsPDF from CDN
-    const jsPDF = window.jsPDF;
+    try {
+    // FIXED: Correct way to access jsPDF
+    const { jsPDF } = window;
     const doc = new jsPDF();
 
     // Set Times New Roman font (use built-in times)
@@ -1245,6 +1240,11 @@ const ExportComponent = () => {
     // Save the PDF
     const fileName = `${projectPlan.title || 'project-plan'}-${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
+
+    } catch (error) {
+    console.error('PDF generation error:', error);
+    alert('Error generating PDF. Please check the console for details.');
+    }
   };
 
   return (
@@ -1266,98 +1266,78 @@ const ExportComponent = () => {
     </div>
 
     {/* Export Options */}
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
-    <h3 className="text-lg font-semibold mb-4">Export Options</h3>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div className="border border-gray-200 rounded-lg p-4">
-    <h4 className="font-medium mb-2">JSON Export</h4>
-    <p className="text-sm text-gray-600 mb-3">Complete project data including all sections and metadata</p>
+    <div className="bg-white border border-gray-200 rounded-lg p-6 flex flex-col md:flex-row gap-4">
     <button
     onClick={exportToJSON}
-    className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+    className="bg-gray-700 text-white py-2 px-6 rounded-md hover:bg-gray-800 transition-colors"
     >
-    Export JSON
+    Export as JSON
     </button>
-    </div>
-
-    <div className="border border-gray-200 rounded-lg p-4">
-    <h4 className="font-medium mb-2">CSV Export</h4>
-    <p className="text-sm text-gray-600 mb-3">Section summary in spreadsheet format</p>
     <button
     onClick={exportToCSV}
-    className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+    className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 transition-colors"
     >
-    Export CSV
+    Export as CSV
     </button>
-    </div>
-
-    <div className="border border-gray-200 rounded-lg p-4">
-    <h4 className="font-medium mb-2">PDF Export</h4>
-    <p className="text-sm text-gray-600 mb-3">Professional document format with Times New Roman font</p>
     <button
     onClick={exportToPDF}
-    className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors"
+    className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors"
     >
-    Export PDF
+    Export as PDF
     </button>
-    </div>
-
-    <div className="border border-gray-200 rounded-lg p-4 opacity-50">
-    <h4 className="font-medium mb-2">Word Export</h4>
-    <p className="text-sm text-gray-600 mb-3">Microsoft Word document (coming soon)</p>
-    <button disabled className="bg-gray-400 text-white py-2 px-4 rounded-md cursor-not-allowed">
-    Coming Soon
-    </button>
-    </div>
-    </div>
     </div>
     </div>
   );
 };
 
 // ====
-// MAIN APP COMPONENT
+// MAIN APP
 // ====
 
-function App() {
+const App = () => {
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    // Simulate loading for a smooth experience
+    const timer = setTimeout(() => setInitialized(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <ProjectPlanProvider>
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
     <EnhancedNavigation />
-    <MainContent />
+    <main>
+    <AppContent />
+    </main>
+    <footer className="bg-gray-800 text-gray-300 text-center py-4 mt-10">
+    Project Plan Pro v2.0 &copy; {new Date().getFullYear()} &mdash; Professional Project Management
+    </footer>
     </div>
     </ProjectPlanProvider>
   );
-}
+};
 
-// Main Content Router
-const MainContent = () => {
+// Main content switcher
+const AppContent = () => {
   const { activeView } = useProjectPlan();
 
-  const renderActiveView = () => {
-    switch (activeView) {
+  switch (activeView) {
     case 'dashboard':
-    return <ProjectDashboard />;
+      return <ProjectDashboard />;
     case 'setup':
-    return <ProjectSetup />;
+      return <ProjectSetup />;
     case 'sections':
-    return <SectionManager />;
+      return <SectionManager />;
     case 'editor':
-    return <ContentEditor />;
+      return <ContentEditor />;
     case 'ai-assistant':
-    return <AIAssistant />;
+      return <AIAssistant />;
     case 'export':
-    return <ExportComponent />;
+      return <ExportComponent />;
     default:
-    return <ProjectDashboard />;
-    }
-  };
-
-  return (
-    <main className="min-h-screen">
-    {renderActiveView()}
-    </main>
-  );
+      return <ProjectDashboard />;
+  }
 };
 
 export default App;
