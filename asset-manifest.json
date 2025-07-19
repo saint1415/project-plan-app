@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/project-plan-app/static/css/main.8f0e332f.css",
+    "main.css": "/project-plan-app/static/css/main.cd7dc53c.css",
     "main.js": "/project-plan-app/static/js/main.0596965b.js",
     "index.html": "/project-plan-app/index.html",
-    "main.8f0e332f.css.map": "/project-plan-app/static/css/main.8f0e332f.css.map",
+    "main.cd7dc53c.css.map": "/project-plan-app/static/css/main.cd7dc53c.css.map",
     "main.0596965b.js.map": "/project-plan-app/static/js/main.0596965b.js.map"
   },
   "entrypoints": [
-    "static/css/main.8f0e332f.css",
+    "static/css/main.cd7dc53c.css",
     "static/js/main.0596965b.js"
   ]
 }
