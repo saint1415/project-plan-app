@@ -1,139 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project Plan App – AI-Powered Project Planning Tool</title>
-    <meta name="description" content="Create, manage, and export professional project plans with AI assistance. Templates, analytics, collaboration, and more." />
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Professional Project Management Plan Generator - Create comprehensive PMBOK-aligned project plans with AI assistance" />
+    <meta name="keywords" content="project management, PMBOK, project plan, AI assistant, professional planning" />
+    <meta name="author" content="Project Plan Pro" />
 
-    <!-- Stylesheet -->
-    <link rel="stylesheet" href="%PUBLIC_URL%/styles.css" />
-
-    <!-- Favicon and App Icons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon.png" />
-    <link rel="icon" type="image/x-icon" href="%PUBLIC_URL%/favicon.ico" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.png" />
-
-    <!-- Theme color for browser UI -->
-    <meta name="theme-color" content="#2563eb" />
-
-    <!-- Social preview -->
-    <meta property="og:title" content="Project Plan App" />
-    <meta property="og:description" content="AI-powered project planning tool for teams and professionals." />
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Project Plan App" />
-    <meta name="twitter:description" content="AI-powered project planning tool for teams and professionals." />
-    <meta name="twitter:image" content="%PUBLIC_URL%/og-image.png" />
+    <meta property="og:url" content="https://saint1415.github.io/project-plan-app/" />
+    <meta property="og:title" content="Project Plan Pro v2.0 - Professional Project Management" />
+    <meta property="og:description" content="Create comprehensive PMBOK-aligned project plans with AI assistance" />
 
-    <!-- jsPDF Library for PDF Export - CRITICAL for PDF functionality -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" 
-            integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNhh/TCPMZ5+w+g2Gw1MzctCMl5wrWpXeLc+PpDsKGlHWpHUqBd6Ajhqg==" 
-            crossorigin="anonymous" 
-            referrerpolicy="no-referrer"></script>
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://saint1415.github.io/project-plan-app/" />
+    <meta property="twitter:title" content="Project Plan Pro v2.0 - Professional Project Management" />
+    <meta property="twitter:description" content="Create comprehensive PMBOK-aligned project plans with AI assistance" />
 
-    <!-- Performance and Security -->
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-
-    <!-- Additional meta tags for better SEO and performance -->
-    <meta name="robots" content="index, follow" />
-    <meta name="author" content="Project Plan App" />
-    <meta name="keywords" content="project management, planning, PMBOK, AI, templates, collaboration" />
-
-    <!-- Performance hints -->
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-
-    <!-- Manifest for PWA capabilities -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
-    <!-- Additional security headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://cdnjs.cloudflare.com;">
-  </head>
-  <body>
-    <!-- Fallback for users without JavaScript -->
-    <noscript>
-      <div style="
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        min-height: 100vh; 
-        background-color: #f9fafb; 
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    <!-- FIXED: Use a different CDN without integrity check -->
+    <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+    <title>Project Plan Pro v2.0 - Professional Project Management</title>
+
+    <style>
+      /* Loading screen styles */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      }
+
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top: 4px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .loading-text {
+        font-size: 18px;
+        font-weight: 500;
+        margin-bottom: 10px;
+      }
+
+      .loading-subtext {
+        font-size: 14px;
+        opacity: 0.8;
+      }
+
+      /* Hide loading screen when app loads */
+      .app-loaded .loading-screen {
+        display: none;
+      }
+
+      /* Fallback styles for no-JS */
+      .no-js-message {
+        display: none;
         text-align: center;
-        padding: 2rem;
-      ">
-        <div style="
-          background: white; 
-          padding: 2rem; 
-          border-radius: 0.5rem; 
-          box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-          max-width: 500px;
-        ">
-          <h1 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.5rem;">JavaScript Required</h1>
-          <p style="color: #6b7280; margin-bottom: 1.5rem; line-height: 1.6;">
-            <strong>Project Plan App</strong> requires JavaScript to function properly. 
-            Please enable JavaScript in your browser settings to continue.
-          </p>
-          <div style="background-color: #fef3c7; padding: 1rem; border-radius: 0.375rem; border-left: 4px solid #f59e0b;">
-            <p style="color: #92400e; font-size: 0.875rem; margin: 0;">
-              💡 <strong>Tip:</strong> Most modern browsers have JavaScript enabled by default. 
-              If you're seeing this message, check your browser's security settings.
-            </p>
-          </div>
-        </div>
+        padding: 50px 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        background: #f8f9fa;
+        min-height: 100vh;
+      }
+
+      .no-js .no-js-message {
+        display: block;
+      }
+
+      .no-js #root {
+        display: none;
+      }
+    </style>
+  </head>
+  <body class="no-js">
+    <noscript>
+      <div class="no-js-message">
+        <h1>JavaScript Required</h1>
+        <p>This application requires JavaScript to run. Please enable JavaScript in your browser and refresh the page.</p>
+        <p>For the best experience, we recommend using a modern browser like Chrome, Firefox, Safari, or Edge.</p>
       </div>
     </noscript>
 
-    <!-- React app root - where the magic happens -->
+    <!-- Loading Screen -->
+    <div class="loading-screen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading Project Plan Pro v2.0</div>
+      <div class="loading-subtext">Initializing professional project management tools...</div>
+    </div>
+
     <div id="root"></div>
 
-    <!-- Loading verification and error handling -->
     <script>
-      // Verify jsPDF loaded successfully
-      window.addEventListener('DOMContentLoaded', function() {
-        if (typeof window.jsPDF === 'undefined') {
-          console.error('❌ jsPDF failed to load. PDF export will not work.');
-
-          // Optional: Show user notification
-          setTimeout(function() {
-            if (document.getElementById('root') && document.getElementById('root').innerHTML === '') {
-              console.warn('⚠️ React app may not have loaded properly.');
-            }
-          }, 5000);
-        } else {
-          console.log('✅ jsPDF loaded successfully. PDF export ready.');
-        }
-      });
+      // Remove no-js class when JavaScript is enabled
+      document.body.classList.remove('no-js');
 
       // Performance monitoring
+      const startTime = performance.now();
+
+      // Check if jsPDF loaded correctly
       window.addEventListener('load', function() {
-        if ('performance' in window) {
-          const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
-          console.log(`📊 Page load time: ${loadTime}ms`);
+        const loadTime = performance.now() - startTime;
+        console.log('📊 Page load time:', Math.round(loadTime) + 'ms');
+
+        // FIXED: Better jsPDF detection and loading
+        if (typeof window.jsPDF !== 'undefined') {
+          console.log('✅ jsPDF loaded successfully');
+          console.log('🔧 jsPDF version:', window.jsPDF.version || 'Unknown');
+        } else {
+          console.error('❌ jsPDF failed to load. PDF export will not work.');
+          // Try to load from backup CDN
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          script.onload = function() {
+            console.log('✅ jsPDF loaded from backup CDN');
+          };
+          script.onerror = function() {
+            console.error('❌ Backup jsPDF CDN also failed');
+          };
+          document.head.appendChild(script);
         }
+
+        // Hide loading screen when React app loads
+        setTimeout(() => {
+          document.body.classList.add('app-loaded');
+        }, 1000);
       });
 
-      // Error handling for uncaught errors
+      // Error handling
       window.addEventListener('error', function(e) {
         console.error('🚨 Uncaught error:', e.error);
       });
 
-      // Handle unhandled promise rejections
+      // Unhandled promise rejection handling
       window.addEventListener('unhandledrejection', function(e) {
         console.error('🚨 Unhandled promise rejection:', e.reason);
       });
     </script>
-
-    <!-- 
-      Production Notes:
-      - This HTML file is optimized for GitHub Pages deployment
-      - jsPDF is loaded from CDN with integrity check for security
-      - All meta tags preserved for SEO and social sharing
-      - Error handling and performance monitoring included
-      - Professional fallback for users without JavaScript
-      - Ready for PWA capabilities with manifest.json
-    -->
   </body>
 </html>
